@@ -3,10 +3,6 @@ iteration_and_listcols
 Shihui Peng
 2023-11-14
 
-``` r
-library(tidyverse)
-```
-
     ## ── Attaching core tidyverse packages ──────────────────────── tidyverse 2.0.0 ──
     ## ✔ dplyr     1.1.3     ✔ readr     2.1.4
     ## ✔ forcats   1.0.0     ✔ stringr   1.5.0
@@ -17,21 +13,13 @@ library(tidyverse)
     ## ✖ dplyr::filter() masks stats::filter()
     ## ✖ dplyr::lag()    masks stats::lag()
     ## ℹ Use the conflicted package (<http://conflicted.r-lib.org/>) to force all conflicts to become errors
-
-``` r
-library(rvest)
-```
-
     ## 
     ## Attaching package: 'rvest'
+    ## 
     ## 
     ## The following object is masked from 'package:readr':
     ## 
     ##     guess_encoding
-
-``` r
-set.seed(12345)
-```
 
 # lists
 
@@ -206,3 +194,362 @@ map(list_norm_samples, summary)
     ## $d
     ##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
     ## -4.5036 -4.0657 -3.2319 -3.1096 -2.4225 -0.5429
+
+- Again, both options produce the same output, but the map places the
+  focus squarely on the function you want to apply by removing much of
+  the bookkeeping.
+
+## map variants
+
+``` r
+# we use 'map_dbl' because median outputs a single numeric value each time; the result is a vector instead of a list. Using the '.id' argument keeps the names of the elements in the input list.
+# If we tried to use 'map_int' or 'map_lgl', we’d get an error because the output of median isn’t a integer or a logical. This is a good way to help catch mistakes when they arise.
+output = map_dbl(list_norm_samples, median, .id = "input")
+
+# we know mean_and_sd produces a data frame, we can use the output-specific 'map_dfr'; this will produce a single data frame.
+output = map_dfr(list_norm_samples, mean_and_sd, .id = "input")
+
+# 'map2 (and map2_dbl, etc)' is helpful when your function has two arguments. 
+# output = map2(input_1, input_2, \(x,y) func(arg_1 = x, arg_2 = y))
+```
+
+# create DF
+
+You will need to be able to manipulate list columns, but usual
+operations for columns that might appear in mutate (like mean or recode)
+often don’t apply to the entries in a list column. Instead, recognizing
+list columns as list columns motivates an approach for working with them
+
+``` r
+# it is not printing anything for samp col - it's telling you that these are named lists.
+listcol_df =
+  tibble(
+    name = c("a", "b", "c", "d"),
+    samp = list_norm_samples
+  )
+```
+
+``` r
+# this will pull out a list - the 'samp' column is a list column
+listcol_df |> pull(samp)
+```
+
+    ## $a
+    ##  [1] 4.677512 3.079474 2.143573 2.221223 2.619064 1.102642 2.928229 1.969135
+    ##  [9] 3.670695 2.638712 2.720694 2.354110 2.484271 1.625444 4.010378 3.453706
+    ## [17] 3.274880 1.728209 3.973595 4.280787
+    ## 
+    ## $b
+    ##  [1] -0.1293827 -8.6798189 -4.7258794 -2.3055982  2.7978307  1.0368585
+    ##  [7]  2.0025813 -0.2570483  4.1247235 -8.3903375 -4.6163971 -3.2872417
+    ## [13]  8.2747090 -5.8196457 -4.3957137  1.1230652  7.1027498  2.5046034
+    ## [19]  1.4241480 -3.6028742
+    ## 
+    ## $c
+    ##  [1] 10.179292  9.713506 10.077199  9.777869  9.984899  9.722556 10.054943
+    ##  [8] 10.109262  9.892181  9.631700  9.841942  9.781186 10.092739 10.003353
+    ## [15] 10.142743 10.074544  9.873716  9.930961  9.953265  9.519458
+    ## 
+    ## $d
+    ##  [1] -3.8410157 -3.5255776 -2.0353239 -1.8313122 -2.9624744 -4.0594504
+    ##  [7] -3.2031989 -3.2605225 -4.5035928 -4.1915465 -0.5429258 -4.4214052
+    ## [13] -4.1706712 -2.3872712 -2.4959271 -3.0336040 -1.9322116 -4.0843643
+    ## [19] -2.4342445 -3.2760908
+
+``` r
+mean_and_sd(listcol_df$samp[[1]])
+```
+
+    ## # A tibble: 1 × 2
+    ##    mean    sd
+    ##   <dbl> <dbl>
+    ## 1  2.85 0.953
+
+``` r
+mean_and_sd(listcol_df$samp[[2]])
+```
+
+    ## # A tibble: 1 × 2
+    ##     mean    sd
+    ##    <dbl> <dbl>
+    ## 1 -0.791  4.69
+
+``` r
+mean_and_sd(listcol_df$samp[[3]])
+```
+
+    ## # A tibble: 1 × 2
+    ##    mean    sd
+    ##   <dbl> <dbl>
+    ## 1  9.92 0.183
+
+``` r
+map(listcol_df$samp, mean_and_sd)
+```
+
+    ## $a
+    ## # A tibble: 1 × 2
+    ##    mean    sd
+    ##   <dbl> <dbl>
+    ## 1  2.85 0.953
+    ## 
+    ## $b
+    ## # A tibble: 1 × 2
+    ##     mean    sd
+    ##    <dbl> <dbl>
+    ## 1 -0.791  4.69
+    ## 
+    ## $c
+    ## # A tibble: 1 × 2
+    ##    mean    sd
+    ##   <dbl> <dbl>
+    ## 1  9.92 0.183
+    ## 
+    ## $d
+    ## # A tibble: 1 × 2
+    ##    mean    sd
+    ##   <dbl> <dbl>
+    ## 1 -3.11  1.04
+
+``` r
+# The map function returns a list; we could store the results as a new list column … !!!
+# We’ve been using mutate to define a new variable in a data frame, especially one that is a function of an existing variable. That’s exactly what we will keep doing.
+
+listcol_df |> 
+  mutate(mean_sd = map(samp, mean_and_sd),
+         median = map(samp, median)) |>
+  pull(mean_sd) 
+```
+
+    ## $a
+    ## # A tibble: 1 × 2
+    ##    mean    sd
+    ##   <dbl> <dbl>
+    ## 1  2.85 0.953
+    ## 
+    ## $b
+    ## # A tibble: 1 × 2
+    ##     mean    sd
+    ##    <dbl> <dbl>
+    ## 1 -0.791  4.69
+    ## 
+    ## $c
+    ## # A tibble: 1 × 2
+    ##    mean    sd
+    ##   <dbl> <dbl>
+    ## 1  9.92 0.183
+    ## 
+    ## $d
+    ## # A tibble: 1 × 2
+    ##    mean    sd
+    ##   <dbl> <dbl>
+    ## 1 -3.11  1.04
+
+``` r
+listcol_df |> 
+  mutate(mean_sd = map(samp, mean_and_sd),
+         median = map(samp, median)) |>
+  select(name, mean_sd) |> 
+  unnest(mean_sd) # unnest a list-column into rows and cols
+```
+
+    ## # A tibble: 4 × 3
+    ##   name    mean    sd
+    ##   <chr>  <dbl> <dbl>
+    ## 1 a      2.85  0.953
+    ## 2 b     -0.791 4.69 
+    ## 3 c      9.92  0.183
+    ## 4 d     -3.11  1.04
+
+# revisit nsduh
+
+create a function for further use…
+
+``` r
+nsduh_url = "http://samhda.s3-us-gov-west-1.amazonaws.com/s3fs-public/field-uploads/2k15StateFiles/NSDUHsaeShortTermCHG2015.htm"
+
+nsduh_html = read_html(nsduh_url)
+
+nsduh_import = function(html, table_num) {
+  
+  table = 
+    html |> 
+    html_table() |> 
+    nth(table_num) |>
+    slice(-1) |> 
+    select(-contains("P Value")) |>
+    pivot_longer(
+      -State,
+      names_to = "age_year", 
+      values_to = "percent") |>
+    separate(age_year, into = c("age", "year"), sep = "\\(") |>
+    mutate(
+      year = str_replace(year, "\\)", ""),
+      percent = str_replace(percent, "[a-c]$", ""),
+      percent = as.numeric(percent))|>
+    filter(!(State %in% c("Total U.S.", "Northeast", "Midwest", "South", "West")))
+
+}
+```
+
+import data using `for loop`:
+
+``` r
+table_input = list(1,4,5)
+name_input = list('marj', 'cocaine', 'heroin')
+output = vector('list', length = 3)
+# length = 3 bc we just want to import 3 of tables, which are table 1, 4, and 5
+# i will do 'nsduh_import(nsduh_html, 1, 'marj')' for importing 1st table. do this to help you write for loops.
+# i got everything w 3 objects, so i can use (i in 1:3) instead of (i in c(1,4,5))
+for (i in 1:3) {
+  output[[i]] = nsduh_import(nsduh_html, table_input[[i]])
+}
+
+nsduh_df = bind_rows(output)
+```
+
+import data using `map`:
+
+``` r
+nsduh_import = function(html, table_num) {
+  
+  table = 
+    html |> 
+    html_table() |> 
+    nth(table_num) |>
+    slice(-1) |> 
+    select(-contains("P Value")) |>
+    pivot_longer(
+      -State,
+      names_to = "age_year", 
+      values_to = "percent") |>
+    separate(age_year, into = c("age", "year"), sep = "\\(") |>
+    mutate(
+      year = str_replace(year, "\\)", ""),
+      percent = str_replace(percent, "[a-c]$", ""),
+      percent = as.numeric(percent)) |>
+    filter(!(State %in% c("Total U.S.", "Northeast", "Midwest", "South", "West")))
+
+}
+
+nsduh_url = "http://samhda.s3-us-gov-west-1.amazonaws.com/s3fs-public/field-uploads/2k15StateFiles/NSDUHsaeShortTermCHG2015.htm"
+
+nsduh_html = read_html(nsduh_url)
+
+nsduh_df =
+  tibble(
+   name = c("marj", "cocaine", "heroine"),
+   number = c(1, 4, 5)
+  ) |>  # keep track of tbl name and tbl number in a df
+  mutate(table = map(number, nsduh_import, html = nsduh_html)) |> 
+  unnest(table)
+
+# this is what we do if we go 1 table by 1
+# map(nsduh_df$number, nsduh_import, html = nsduh_html)
+```
+
+# rivist weather_df
+
+``` r
+weather_df = 
+  rnoaa::meteo_pull_monitors(
+    c("USW00094728", "USW00022534", "USS0023B17S"),
+    var = c("PRCP", "TMIN", "TMAX"), 
+    date_min = "2021-01-01",
+    date_max = "2022-12-31") |>
+  mutate(
+    name = recode(
+      id, 
+      USW00094728 = "CentralPark_NY", 
+      USW00022534 = "Molokai_HI",
+      USS0023B17S = "Waterhole_WA"),
+    tmin = tmin / 10,
+    tmax = tmax / 10) |>
+  select(name, id, everything())
+```
+
+    ## Registered S3 method overwritten by 'hoardr':
+    ##   method           from
+    ##   print.cache_info httr
+
+    ## using cached file: /Users/peng_/Library/Caches/org.R-project.R/R/rnoaa/noaa_ghcnd/USW00094728.dly
+
+    ## date created (size, mb): 2023-10-12 05:40:09.606797 (8.534)
+
+    ## file min/max dates: 1869-01-01 / 2023-10-31
+
+    ## using cached file: /Users/peng_/Library/Caches/org.R-project.R/R/rnoaa/noaa_ghcnd/USW00022534.dly
+
+    ## date created (size, mb): 2023-10-12 05:40:14.620904 (3.839)
+
+    ## file min/max dates: 1949-10-01 / 2023-10-31
+
+    ## using cached file: /Users/peng_/Library/Caches/org.R-project.R/R/rnoaa/noaa_ghcnd/USS0023B17S.dly
+
+    ## date created (size, mb): 2023-10-12 05:40:16.392605 (0.997)
+
+    ## file min/max dates: 1999-09-01 / 2023-10-31
+
+``` r
+weather_nest_df = 
+  weather_df |> 
+  nest(df = date : tmin)
+```
+
+can i regress `tmax` on `tmin` for each of these?
+
+``` r
+central_park_df =
+  weather_nest_df |> 
+  pull(df) |> 
+  nth(1)
+```
+
+fit a linear reg:
+
+``` r
+# what we do if go 1 by 1
+# central_park_df =
+#  weather_nest_df |> 
+#  pull(df) |> 
+#  nth(1)
+# lm(tmax~tmin, data=central_park_df)
+
+# now do w a function
+weather_lm = function(df) {
+  lm(tmax~tmin, data=df)
+}
+
+weather_lm(weather_nest_df$df[[2]])
+```
+
+    ## 
+    ## Call:
+    ## lm(formula = tmax ~ tmin, data = df)
+    ## 
+    ## Coefficients:
+    ## (Intercept)         tmin  
+    ##     21.7547       0.3222
+
+try a for loop for this case and apply the function above:
+
+``` r
+input_list = weather_nest_df |> pull(df)
+output_list = vector('list', length = 3)
+
+for (i in 1:3){
+  output_list[[i]] = weather_lm(input_list[[i]])
+}
+
+# now i have an output list floating around, and i can add it back into my data set
+# add a col 'models' that will map across col 'df' using 'weather_lm' function
+weather_nest_df |> 
+  mutate(models = map(df, weather_lm))
+```
+
+    ## # A tibble: 3 × 4
+    ##   name           id          df                 models
+    ##   <chr>          <chr>       <list>             <list>
+    ## 1 CentralPark_NY USW00094728 <tibble [730 × 4]> <lm>  
+    ## 2 Molokai_HI     USW00022534 <tibble [730 × 4]> <lm>  
+    ## 3 Waterhole_WA   USS0023B17S <tibble [730 × 4]> <lm>

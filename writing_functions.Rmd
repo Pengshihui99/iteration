@@ -1,0 +1,77 @@
+---
+title: "writing functions"
+author: "Shihui Peng"
+date: "2023-11-14"
+output: github_document
+---
+```{r, echo=FALSE, message=FALSE}
+library(tidyverse)
+library(rvest)
+```
+
+set seed for reproducibility
+```{r}
+set.seed(12345)
+```
+* we will generate random number today, this code help us get exactly the same random number every single time. this code tell it where to start.
+  * to make sure random number generation starts at the same point and give us the same value.
+
+# Z score function
+z score subtract the mean and divide by the sd.
+generate a vec of random samples:
+```{r}
+x_vec = rnorm(20, mean = 5, sd = .3)
+```
+* take a sample from a normal distribution. do 20 of this and set mean as 5 and sd as 0.3
+
+compute z score for x_vec
+```{r}
+(x_vec - mean(x_vec)) / sd(x_vec)
+```
+
+suppose i have many vectors and want to quickly compute z scores for them.
+* write a function to do this!
+```{r}
+z_score = function(x) {
+# check these
+    if (!is.numeric(x)) {
+    stop("Argument x should be numeric")
+  } else if (length(x) < 2) {
+    stop("you need at least 2 numbers to get z scores")
+  }
+
+# if neither of above are true, then go as below:  
+  z = (x - mean(x) )/ sd(x)
+  z
+}
+```
+* If I want to repeat this process for lots of samples, I need a function that takes the sample as an argument, computes the vector of Z scores in the body, and returns the result. I define such a function below.
+  * name what that input is -- call it `x` inside `function()` (generic vector).
+  * use that to produce z -- `z = (x - mean(x) / sd(x))`
+  * return z -- `z`
+
+check if this works:
+```{r, error=TRUE}
+z_score(x = x_vec)
+
+z_score(x = rnorm(10, mean = 5))
+
+# return NA, bc no sd when only 1 number (w/o the 'if' part in our function)
+z_score(x = 3)
+
+# return error bc no sd or mean for character variables (w/o the 'if' part in our function)
+z_score(c('my', 'name', 'is', 'sheryl'))
+
+# return 0.5  0.5 -1.5  0.5 bc r converts these to 1 and 0 (w/o the 'if' part in our function)
+z_score(c(TRUE, TRUE, FALSE, TRUE))
+
+# similar as above (w/o the 'if' part in our function)
+z_score(sample(c(TRUE, FALSE), 25, replace = TRUE))
+
+# return error bc cannot get mean and sd for the entire data frame (w/o the 'if' part in our function)
+z_score(iris)
+```
+
+
+
+

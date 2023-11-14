@@ -72,6 +72,67 @@ z_score(sample(c(TRUE, FALSE), 25, replace = TRUE))
 z_score(iris)
 ```
 
+# multiple outputs
 
+write a function returning the mean and sd from a sample of numbers
+```{r}
+mean_and_sd = function(x) {
 
+      if (!is.numeric(x)) {
+    stop("Argument x should be numeric")
+  } else if (length(x) < 2) {
+    stop("you need at least 2 numbers to get z scores")
+  }
+  
+  mean_x = mean(x)
+  sd_x = sd(x)
+  # if stop here, r will only return the last thing that happens
+  
+  # 1 of options here is to return a data frame
+  tibble(
+    mean = mean_x,
+    sd = sd_x
+  )
+}
+```
+* we can also make a list: `list(mean = mean_x, sd = sd_x)`
+* which to choose:
+  * to return the original sample along with the computed values -- a list might make sense.
+  * to run your function a lot and study the results -- having a data frame is easier to use other tools.
+  
+double check if i did right:
+```{r}
+mean_and_sd(x_vec)
+```
+
+# multiple input
+
+```{r}
+x_vec = rnorm(n = 30, mean = 5, sd = 0.5)
+
+tibble(
+  mean = mean(x_vec),
+  sd = sd(x_vec)
+)
+```
+
+what if i want to try this w diff smaple sizes, means, and sds? 
+* let's write a function using `n`, a true mean, and a true sd as inputs.
+```{r}
+sim_mean_sd = function(n_obs, mu, sigma) {
+  
+  x_vec = rnorm(n = n_obs, mean = mu, sd = sigma)
+
+  tibble(
+   mean = mean(x_vec),
+   sd = sd(x_vec)
+  )
+}
+
+# in this case, position does not matter
+sim_mean_sd(n_obs = 3000, mu = 5, sigma = 12.3)
+
+# here r is doing position matching, by assuming 3000 is for n_obs, 5 is for mu, and 12.3 is for sigma
+sim_mean_sd(3000, 5, 12.3)
+```
 

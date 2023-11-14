@@ -364,3 +364,53 @@ nsduh_results =
 ```
 
 # functions as arguments
+
+``` r
+x_vec = rnorm(25, 0, 1)
+
+my_summary = function(x, summ_func) {
+  summ_func(x)
+}
+
+my_summary(x_vec, sd)
+```
+
+    ## [1] 1.20173
+
+``` r
+my_summary(x_vec, IQR)
+```
+
+    ## [1] 1.550333
+
+``` r
+my_summary(x_vec, var)
+```
+
+    ## [1] 1.444154
+
+# scoping and names
+
+``` r
+f = function(x) {
+  z = x + y
+  z
+}
+
+x = 1
+y = 2
+
+f(x = y)
+```
+
+    ## [1] 4
+
+Examples like this are tricky, but emphasize an issue that comes up a
+lot in writing functions: \* you define a variable in your global
+environment and use it in your function, but it isn’t passed as an
+argument. \* This is easy to miss, especially when you go from code
+written in chunks to a function, and can be hard to track down if you
+empty your working directory or change a variable name. \* The best
+advice I have is to give your arguments useful names and think carefully
+about where everything is defined, and to periodically restart R and try
+everything again!
